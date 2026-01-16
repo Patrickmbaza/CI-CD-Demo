@@ -9,7 +9,7 @@
     "build": "mkdir -p dist && cp -r src/* dist/ 2>/dev/null || echo 'Build complete'"
   },
   "devDependencies": {
-    "eslint": "^9.0.0",
+    "eslint": "^8.57.0",
     "jest": "^29.7.0"
   },
   "jest": {
