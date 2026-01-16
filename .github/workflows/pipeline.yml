@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pages: write
@@ -76,6 +80,13 @@ jobs:
     - name: Build application
       run: npm run build
     
+    - name: Verify build output
+      run: |
+        echo "=== Build output structure ==="
+        ls -la dist/
+        echo "=== Looking for index.html ==="
+        find dist/ -name "index.html" -type f
+    
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -106,14 +117,23 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: build-dist
-        path: dist/
+        path: ./_site  # Standard Pages convention
+    
+    - name: Debug downloaded files
+      run: |
+        echo "=== Downloaded files structure ==="
+        ls -la _site/
+        echo "=== Checking for index.html ==="
+        find _site/ -name "index.html" -type f
     
     - name: Setup Pages
-      uses: actions/configure-pages@v4  # Updated to v4
+      uses: actions/configure-pages@v4
     
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3  # Updated to v3
+    - name: Upload artifact to GitHub Pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./_site
     
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v4  # Updated to v4
+      uses: actions/deploy-pages@v4
