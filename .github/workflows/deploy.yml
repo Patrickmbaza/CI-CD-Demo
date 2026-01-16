@@ -3,121 +3,49 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:  # Allows manual triggering
-
-# Add permissions
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
-# Cancel older runs of the same workflow
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
-  test-and-lint:
-    timeout-minutes: 15  # Set explicit timeout
+  test:
     runs-on: ubuntu-latest
     
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x]
-        # Run one at a time to avoid resource issues
-        fail-fast: false
-    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+    - uses: actions/checkout@v4
     
-    - name: Setup Node.js ${{ matrix.node-version }}
+    - name: Use Node.js 20.x
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
-    
-    - name: Cache node modules
-      uses: actions/cache@v3
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
+        node-version: '20.x'
     
     - name: Install dependencies
-      run: |
-        echo "Installing dependencies..."
-        npm ci --no-audit --prefer-offline
-      timeout-minutes: 3
+      run: npm ci
     
-    - name: Lint JavaScript code
-      run: |
-        echo "Running ESLint..."
-        npm run lint || echo "Linting completed with warnings"
-      continue-on-error: true  # Don't fail on warnings
+    - name: Lint
+      run: npm run lint
     
-    - name: Run tests with coverage
-      run: |
-        echo "Running tests..."
-        npm test -- --coverage --watchAll=false --passWithNoTests
-      timeout-minutes: 5
-    
-    - name: Upload test results
-      if: always()  # Always run this step
-      uses: actions/upload-artifact@v3
-      with:
-        name: test-results-${{ matrix.node-version }}
-        path: |
-          coverage/
-          junit.xml
-        retention-days: 7
-    
-    - name: Upload coverage reports
-      if: success()  # Only upload if tests passed
-      uses: codecov/codecov-action@v3
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./coverage/lcov.info
-        fail_ci_if_error: false  # Don't fail CI on Codecov upload errors
+    - name: Test
+      run: npm test -- --watchAll=false
 
   deploy:
-    needs: test-and-lint
+    needs: test
     runs-on: ubuntu-latest
-    # Only deploy on push to main, not on PRs
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    timeout-minutes: 10
+    if: github.ref == 'refs/heads/main'
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
     
     - name: Install dependencies
-      run: npm ci --no-audit
+      run: npm ci
     
-    - name: Build application
+    - name: Build
       run: npm run build
-      
-    - name: Setup Pages
-      uses: actions/configure-pages@v3
-      
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v2
-      with:
-        path: './build'
-        
+    
     - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v2
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./build
