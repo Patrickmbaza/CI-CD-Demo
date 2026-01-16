@@ -2,10 +2,12 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  test:
+  test-and-lint:
     runs-on: ubuntu-latest
     
     steps:
@@ -15,35 +17,40 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
+        cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci
+      run: npm install  # Changed from npm ci
     
-    - name: Lint
+    - name: Lint JavaScript code
       run: npm run lint
     
-    - name: Test
+    - name: Run tests
       run: npm test -- --watchAll=false
+      
+    - name: Build application
+      run: npm run build
 
   deploy:
-    needs: test
+    needs: test-and-lint
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup Node.js
+    - name: Use Node.js 20.x
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
+        cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci
+      run: npm install  # Changed from npm ci
     
-    - name: Build
+    - name: Build application
       run: npm run build
-    
+      
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
