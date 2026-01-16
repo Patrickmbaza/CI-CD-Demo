@@ -11,7 +11,6 @@ permissions:
   pages: write
   id-token: write
 
-# Define environment variables
 env:
   NODE_VERSION: '18.x'
 
@@ -31,27 +30,54 @@ jobs:
         cache: 'npm'
         cache-dependency-path: '**/package-lock.json'
     
+    - name: Clean previous builds
+      run: rm -rf dist/ coverage/
+    
     - name: Install dependencies
       run: npm ci
-      # Optional: Add timing to see how long this takes
-      # Continue even if lint/test fails for artifact upload
-      # if: success() || failure()
+    
+    - name: Debug - Show file structure
+      run: |
+        echo "=== DEBUG START ==="
+        echo "Current directory: $(pwd)"
+        echo "Listing all files:"
+        find . -type f -name "*.js" | grep -v node_modules | sort
+        echo "=== src/ directory ==="
+        ls -la src/
+        echo "=== Checking app.js ==="
+        ls -la src/app.js || echo "app.js not found"
+        ls -la src/App.js || echo "App.js not found"
+        echo "=== DEBUG END ==="
+    
+    - name: Debug - Test file existence
+      run: |
+        echo "=== Testing file existence ==="
+        node -e "
+        const fs = require('fs');
+        const path = require('path');
+        const appPath = path.join(process.cwd(), 'src', 'app.js');
+        const AppPath = path.join(process.cwd(), 'src', 'App.js');
+        console.log('app.js exists?', fs.existsSync(appPath));
+        console.log('App.js exists?', fs.existsSync(AppPath));
+        if (fs.existsSync(appPath)) {
+          console.log('Trying to require app.js...');
+          try {
+            const math = require(appPath);
+            console.log('Success! Functions:', Object.keys(math));
+          } catch (err) {
+            console.error('Error requiring app.js:', err.message);
+          }
+        }
+        "
     
     - name: Lint JavaScript code
       run: npm run lint
     
-    - name: Run unit tests
-      run: npm test
+    - name: Run unit tests with debug
+      run: npm test -- --verbose
     
     - name: Build application
       run: npm run build
-    
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-dist
-        path: dist/
-        retention-days: 1
     
     - name: Upload test results
       uses: actions/upload-artifact@v4

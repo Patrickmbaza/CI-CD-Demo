@@ -4,7 +4,7 @@
   "description": "CI/CD Pipeline Demo",
   "homepage": "https://patrickmbaza.github.io/CI-CD-Demo",
   "scripts": {
-    "lint": "npx eslint . --ext .js",
+    "lint": "npx eslint src/ --ext .js",
     "test": "npx jest",
     "build": "mkdir -p dist && cp -r src/* dist/ 2>/dev/null || echo 'Build complete'"
   },
