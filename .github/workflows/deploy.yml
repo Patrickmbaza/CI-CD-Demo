@@ -1,15 +1,25 @@
-name: CI/CD Pipeline
+name: Deploy React App to GitHub Pages
 
 on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
-  build:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -17,44 +27,19 @@ jobs:
         node-version: '20.x'
     
     - name: Install dependencies
-      run: npm install
+      run: npm ci
     
-    - name: Build React app
-      run: |
-        echo "Building React application..."
-        npm run build
-        echo "Build completed!"
-        ls -la build/
-    
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4  # CHANGED FROM v3 to v4
-      with:
-        name: build-artifacts
-        path: build/
-        retention-days: 1
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
-    
-    steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4  # Already v4, keep it
-      with:
-        name: build-artifacts
-        path: build
+    - name: Build
+      run: npm run build
     
     - name: Setup Pages
-      uses: actions/configure-pages@v3
+      uses: actions/configure-pages@v4
     
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v2
+      with:
+        path: './build'
     
     - name: Deploy to GitHub Pages
+      id: deployment
       uses: actions/deploy-pages@v2
