@@ -40,8 +40,6 @@ jobs:
       run: |
         echo "=== DEBUG START ==="
         echo "Current directory: $(pwd)"
-        echo "Listing all files:"
-        find . -type f -name "*.js" | grep -v node_modules | sort
         echo "=== src/ directory ==="
         ls -la src/
         echo "=== Checking app.js ==="
@@ -78,6 +76,13 @@ jobs:
     
     - name: Build application
       run: npm run build
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-dist
+        path: dist/
+        retention-days: 1
     
     - name: Upload test results
       uses: actions/upload-artifact@v4
