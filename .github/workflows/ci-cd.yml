@@ -1,0 +1,94 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Permissions for GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  # CI: Continuous Integration (Testing & Quality)
+  ci:
+    name: Continuous Integration
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Lint JavaScript code
+      run: npm run lint
+      # ESLint checks code quality and style
+    
+    - name: Run unit tests
+      run: npm test -- --watchAll=false --coverage
+      # Jest runs tests and generates coverage report
+    
+    - name: Build application
+      run: npm run build
+      # Creates production build to verify it works
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          coverage/
+        retention-days: 7
+
+  # CD: Continuous Deployment
+  cd:
+    name: Continuous Deployment
+    runs-on: ubuntu-latest
+    needs: ci  # Only deploy if CI passes
+    if: github.ref == 'refs/heads/main'  # Only deploy from main branch
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build for production
+      run: npm run build
+      # Creates optimized production build
+    
+    - name: Setup GitHub Pages
+      uses: actions/configure-pages@v3
+    
+    - name: Upload build artifact
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: './build'
+        # Uploads build folder for deployment
+    
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2
+      # Automatically deploys to GitHub Pages
