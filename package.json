@@ -4,10 +4,12 @@
   "description": "CI/CD Pipeline Demo",
   "homepage": "https://patrickmbaza.github.io/CI-CD-Demo",
   "scripts": {
-    "lint": "npx eslint src/ --ext .js",
-    "test": "npx jest",
-    "build": "mkdir -p dist && cp -r src/* dist/ 2>/dev/null || echo 'Build complete'"
-  },
+  "lint": "npx eslint src/ --ext .js --max-warnings 0",
+  "test": "npx jest --coverage",
+  "build": "mkdir -p dist && cp -r src/* dist/ && echo '🚀 Build complete! Ready for deployment.'",
+  "predeploy": "npm run build",
+  "deploy": "gh-pages -d dist"
+},
   "devDependencies": {
     "eslint": "^8.57.0",
     "jest": "^29.7.0"
