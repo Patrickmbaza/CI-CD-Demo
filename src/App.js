@@ -1,4 +1,4 @@
-// Simple math functions for testing
+// Math functions for testing
 function add(a, b) {
     return a + b;
 }
@@ -12,7 +12,5 @@ function divide(a, b) {
     return a / b;
 }
 
-// Export for Node.js testing
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { add, multiply, divide };
-}
+// Export for CommonJS (Node.js/require)
+module.exports = { add, multiply, divide };
